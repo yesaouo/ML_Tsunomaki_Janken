@@ -64,11 +64,6 @@ struct RPSGameView: View {
     @AppStorage("totalDraws") private var totalDraws: Int = 0
     @AppStorage("totalLosses") private var totalLosses: Int = 0
     @StateObject private var appModel = AppModel()
-    let gestureEmojis = [
-        "Rock": "👊",
-        "Scissors": "✌️", 
-        "Paper": "✋"
-    ]
 
     var body: some View {
         ZStack {
@@ -77,16 +72,16 @@ struct RPSGameView: View {
                 .animation(.easeInOut(duration: 0.5), value: game.backgroundColor)
             
             if game.showResult {
-                GameResultView(game: $game)
+                GameResultView()
             } else if isMLGame {
                 if !game.showButton {
-                    MoveDisplay(move: game.playerMove ?? "🤔", borderColor: .blue)
+                    MoveDisplay(move: game.playerMove?.rawValue ?? "🤔", borderColor: .blue)
                 } else {
                     // Camera preview with hand pose overlay
                     CameraView(showNodes: true)
                         .environmentObject(appModel)
                         .overlay {
-                            Text(gestureEmojis[appModel.predictionLabel] ?? "🤔")
+                            Text(Sign.emoji(fromLabel: appModel.predictionLabel))
                                 .font(.system(size: 50))
                         }
                         .overlay(alignment: .bottom) {
@@ -121,7 +116,7 @@ struct RPSGameView: View {
                         .disabled(!game.showButton)
                     }
 
-                    MoveDisplay(move: game.playerMove ?? "🤔", borderColor: .blue)
+                    MoveDisplay(move: game.playerMove?.rawValue ?? "🤔", borderColor: .blue)
                         .onTapGesture {
                             if game.showButton {
                                 startGame()
@@ -138,6 +133,7 @@ struct RPSGameView: View {
                 }
             }
         }
+        .environment(game)
     }
     
     // 開始遊戲
@@ -246,11 +242,11 @@ struct RPSGameView: View {
     }
 
     func finalizeMLGame() {
-        if appModel.predictionLabel == "" {
+        guard let sign = Sign.fromLabel(appModel.predictionLabel) else {
             resetMLGame()
             return
         }
-        game.playerMove = gestureEmojis[appModel.predictionLabel]
+        game.playerMove = sign
         startGame()
         resetMLGame()
     }
@@ -266,14 +262,14 @@ struct RPSGameView: View {
 }
 
 struct GameResultView: View {
-    @Binding var game: RPSGameState
+    @Environment(RPSGameState.self) private var game
 
     var body: some View {
         HStack {
             Spacer()
-            PlayerView(name: "You", move: game.playerMove ?? "🤔", color: .blue)
+            PlayerView(name: "You", move: game.playerMove?.rawValue ?? "🤔", color: .blue)
             Spacer()
-            PlayerView(name: "Watame", move: game.computerMove ?? "🐏", color: .purple)
+            PlayerView(name: "Watame", move: game.computerMove?.rawValue ?? "🐏", color: .purple)
             Spacer()
         }
     }
